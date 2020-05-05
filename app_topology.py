@@ -6,6 +6,7 @@ import yaml
 import json
 import argparse
 import datetime
+import re
 
 from deepdiff import DeepDiff
 
@@ -15,6 +16,13 @@ from nornir.plugins.functions.text import print_result
 
 os.environ['NET_TEXTFSM'] = os.path.dirname(os.path.abspath(__file__)) + '\\ntc-template\\templates\\'
 TOPOLOGIES_DIR_PATH = os.path.dirname(os.path.abspath(__file__)) + '\\topologies' # каталог сохраненных топологий
+
+def extract_hostname_from_fqdn(fqdn: str) -> str:
+    """Extracts hostname from fqdn-like string
+
+    For example, R1.cisco.com -> R1,  sw1 -> sw1"
+    """
+    return fqdn.split(".")[0]
 
 def update_node(topology_data, dev='', group='edge_device', dev_cap=''):
     # Device Capability
@@ -50,38 +58,41 @@ def find_node_group(topology_data, dev='', group='core_device'):
                 return False
     return False
 
+def hostname_task(task, new_hostname: dict):
+    hostname = task.run(netmiko_send_command, command_string="show run | i hostname")
+    m = re.search(r'^hostname\s+(\S+)\s*$', hostname.result, flags=re.MULTILINE)
+    new_hostname.update( { task.host.name : m.group(1) if m else task.host } )
+    return
+
 def gather_info():
     # Сбор информации о топологии сети используя протокол LLDP
     with InitNornir(config_file="config.yaml") as nr:
 
         # Netmiko
+        new_hostname: dict = dict()
+        nr.run(hostname_task, new_hostname=new_hostname)
         lldp_table = nr.run(netmiko_send_command, command_string="show lldp neighbors", use_textfsm=True)
 
-        #print_result(lldp_table)
+        print_result(lldp_table)
 
         # Формируем топологию в формате { nodes: [список узлов] , edges: [список соеинений] }
-        # nodes:
-        # id, label, title, group
-        # edges:
-        # from, to, id, label, title
-        # arrows: {
-        # from: {enabled: true, type: "image", src: "http://localhost/image/INTERFACE.png"}
-        # to: {enabled: true, type: "image", src: "http://localhost/image/INTERFACE.png"}
-        # }
+        # nodes: { host, group, dev_type }
+        # edges: { from, to, from_interface, to_interface }
         topology_data = { 'nodes': [], 'edges': [] }
         for host in nr.inventory.hosts.keys():
-            update_node(topology_data,dev=host,group='core_device')
-            for neighbor in lldp_table[host][0].result:
-                if not find_node_group(topology_data,dev=neighbor['neighbor']):
-                    update_node(topology_data,dev=neighbor['neighbor'],dev_cap=neighbor['capabilities'])
+            update_node(topology_data,dev=new_hostname[host],group='core_device')
+            if isinstance(lldp_table[host][0].result, list):
+                for neighbor in lldp_table[host][0].result:
+                    if not find_node_group(topology_data,dev=extract_hostname_from_fqdn(neighbor['neighbor'])):
+                        update_node(topology_data,dev=extract_hostname_from_fqdn(neighbor['neighbor']),dev_cap=neighbor.get('capabilities', ''))
 
-                    topology_data['edges'].append( {
-                                            'from': host,
-                                            'from_interface': neighbor['local_interface'],
-                                            'to': neighbor['neighbor'],
-                                            'to_interface': neighbor['neighbor_interface']
-                                            })
-                #print(json.dumps(neighbor, indent=4))
+                        topology_data['edges'].append( {
+                                                'from': new_hostname[host],
+                                                'from_interface': neighbor['local_interface'],
+                                                'to': extract_hostname_from_fqdn(neighbor['neighbor']),
+                                                'to_interface': neighbor['neighbor_interface']
+                                                })
+                    #print(json.dumps(neighbor, indent=4))
         #print(json.dumps(topology_data, indent=4))
         return topology_data
 
