@@ -60,10 +60,7 @@ def find_node_group(topology_data, dev='', group='core_device'):
     return False
 
 def hostname_task(task, new_hostname: dict):
-    try:
-        hostname = task.run(netmiko_send_command, command_string="show run | i hostname")
-    except  NornirExecutionError:
-        print("ОШИБКА!!! в hostname_task!!!")
+    hostname = task.run(netmiko_send_command, command_string="show run | i hostname")
     m = re.search(r'^hostname\s+(\S+)\s*$', hostname.result, flags=re.MULTILINE)
     new_hostname.update( { task.host.name : m.group(1) if m else task.host } )
     return
