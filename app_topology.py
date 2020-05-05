@@ -13,6 +13,7 @@ from deepdiff import DeepDiff
 from nornir import InitNornir
 from nornir.plugins.tasks.networking import netmiko_send_command
 from nornir.plugins.functions.text import print_result
+from nornir.core.exceptions import NornirExecutionError
 
 os.environ['NET_TEXTFSM'] = os.path.dirname(os.path.abspath(__file__)) + '\\ntc-template\\templates\\'
 TOPOLOGIES_DIR_PATH = os.path.dirname(os.path.abspath(__file__)) + '\\topologies' # каталог сохраненных топологий
@@ -59,7 +60,10 @@ def find_node_group(topology_data, dev='', group='core_device'):
     return False
 
 def hostname_task(task, new_hostname: dict):
-    hostname = task.run(netmiko_send_command, command_string="show run | i hostname")
+    try:
+        hostname = task.run(netmiko_send_command, command_string="show run | i hostname")
+    except  NornirExecutionError:
+        print("ОШИБКА!!! в hostname_task!!!")
     m = re.search(r'^hostname\s+(\S+)\s*$', hostname.result, flags=re.MULTILINE)
     new_hostname.update( { task.host.name : m.group(1) if m else task.host } )
     return
@@ -73,26 +77,25 @@ def gather_info():
         nr.run(hostname_task, new_hostname=new_hostname)
         lldp_table = nr.run(netmiko_send_command, command_string="show lldp neighbors", use_textfsm=True)
 
-        print_result(lldp_table)
-
         # Формируем топологию в формате { nodes: [список узлов] , edges: [список соеинений] }
         # nodes: { host, group, dev_type }
         # edges: { from, to, from_interface, to_interface }
         topology_data = { 'nodes': [], 'edges': [] }
         for host in nr.inventory.hosts.keys():
-            update_node(topology_data,dev=new_hostname[host],group='core_device')
-            if isinstance(lldp_table[host][0].result, list):
-                for neighbor in lldp_table[host][0].result:
-                    if not find_node_group(topology_data,dev=extract_hostname_from_fqdn(neighbor['neighbor'])):
-                        update_node(topology_data,dev=extract_hostname_from_fqdn(neighbor['neighbor']),dev_cap=neighbor.get('capabilities', ''))
+            update_node(topology_data,dev=new_hostname.get(host,host),group='core_device')
+            if host not in nr.data.failed_hosts:
+                if isinstance(lldp_table[host][0].result, list):
+                    for neighbor in lldp_table[host][0].result:
+                        if not find_node_group(topology_data,dev=extract_hostname_from_fqdn(neighbor['neighbor'])):
+                            update_node(topology_data,dev=extract_hostname_from_fqdn(neighbor['neighbor']),dev_cap=neighbor.get('capabilities', ''))
 
-                        topology_data['edges'].append( {
-                                                'from': new_hostname[host],
-                                                'from_interface': neighbor['local_interface'],
-                                                'to': extract_hostname_from_fqdn(neighbor['neighbor']),
-                                                'to_interface': neighbor['neighbor_interface']
-                                                })
-                    #print(json.dumps(neighbor, indent=4))
+                            topology_data['edges'].append( {
+                                                    'from': new_hostname[host],
+                                                    'from_interface': neighbor['local_interface'],
+                                                    'to': extract_hostname_from_fqdn(neighbor['neighbor']),
+                                                    'to_interface': neighbor['neighbor_interface']
+                                                    })
+                        #print(json.dumps(neighbor, indent=4))
         #print(json.dumps(topology_data, indent=4))
         return topology_data
 
