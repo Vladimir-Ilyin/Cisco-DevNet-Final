@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html class="h-100">
+<head>
+<meta charset="utf-8">
+<title>Топология сети по данным LLDP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha384-vk5WoKIaW/vJyUAd9n/wmopsmNhiy+L2Z+SBxGYnUkunIxVxAv/UtMOhba/xskxh" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.5.0/knockout-min.js"></script>
+
+<script type="text/javascript" src="/static/js/vis.js"></script>
+<link href="/static/js/vis-network.min.css" rel="stylesheet" type="text/css" />
+
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
+</head>
+<style type="text/css" media="screen">
+table#table_topologies.table tbody tr:hover {
+    background-color: rgb(240, 240, 128);
+}
+table#table_topologies.table tbody tr.selected {
+    color: white;
+    background-color: rgb(32, 80, 128);
+}
+#mynetwork {
+    width: 68vw;
+    height: 70vh;
+    border: 1px solid gray;
+}
+</style>
+<body class="d-flex flex-column h-100">
+<header>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#"><i class="fas fa-network-wired"></i>&nbsp; Топология сети по данным LLDP</a>
+</nav>
+</header>
+
+<main role="main" class="flex-shrink-0">
+<div id="main" class="container py-3">
+
+<div id="alerts-space" class="container">
+<!-- НАЧАЛО Алерт -->
+<!-- КОНЕЦ Алерт -->
+</div>
+
+</div>
+
+<div class="container-fluid">
+<!-- НАЧАЛО Основной контейнер -->
+
+<div class="row">
+<!-- НАЧАЛО первая строка контейнера -->
+
+<div id="topology" class="col py-3">
+<div class="card">
+<h5 class="card-header"><i class="fas fa-network-wired"></i>&nbsp; <b>Топология сети</b> <b data-bind="text: topology_name"></b></h5>
+
+<div class="card-body">
+<div id="mynetwork"></div>
+</div>
+
+</div>
+</div>
+
+<div id="topologies" class="col py-3">
+<div class="card">
+<h5 class="card-header"><i class="fas fa-list-alt"></i>&nbsp; <b>Сохраненные топологии</b></h5>
+
+<div class="card-body">
+<div class="d-print-none row pb-3">
+    <div class="col"><button data-bind="click: createTopology" type="button" class="btn btn-outline-primary btn-sm btn-block"><i class="fas fa-plus"></i>&nbsp; Создать топологию</button></div>
+    <div class="col"><button data-bind="click: compareTopology" type="button" class="btn btn-outline-primary btn-sm btn-block"><i class="fas fa-greater-than-equal"></i>&nbsp; Сравнить топологии</button></div>
+</div>
+
+<table id="table_topologies" class="table table-striped">
+<thead>
+    <tr>
+    <th style="width: 100%;"><b>Наименование</b></th>
+    </tr>
+</thead>
+<tbody data-bind="foreach: topologies">
+    <tr data-bind="click: $parent.selectTopology, attr: { 'id' : 'topology_' + $index() }">
+        <td data-bind="text: topology_name"></td>
+    </tr>
+</tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<!-- КОНЕЦ первая строка контейнера -->
+</div>
+
+<!--div class="row"-->
+<!-- НАЧАЛО вторая строка контейнера -->
+
+<!-- КОНЕЦ вторая строка контейнера -->
+<!--/div-->
+
+<!-- КОНЕЦ Основной контейнер -->
+</div>
+
+</main>
+
+<!-- НАЧАЛО Диалоговые окна -->
+
+<div id="myloader" class="modal" tabindex="-1" role="dialog" aria-labelledby="DialogProgressLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered" role="document">
+<div class="modal-content">
+    
+<div class="progress" style="height: 25px;">
+<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+</div>
+
+</div>
+</div>
+</div>
+
+
+
+<div id="compareTopology" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="addDialogLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+
+    <div class="modal-header">
+        <h3 id="addDialogLabel"><i class="fas fa-greater-than-equal"></i>&nbsp; Сравнить топологии</h3>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    </div>
+    <div class="modal-body container">
+            <div class="form-group row justify-content-center">
+                <div class="input-group col-10">
+                    <div class="input-group-prepend w-35">
+                        <span class="input-group-text"><div class="align-self-start">Топология 1</div></span>
+                    </div>
+
+                    <select class="custom-select" data-bind="options: topologies,
+                                                            optionsText: 'topology_name',
+                                                            optionsValue: 'topology_file',
+                                                            value: selected_topology1,
+                                                            optionsCaption: 'Выберите топологию...'">
+                    </select>
+
+                </div>
+
+                <div class="input-group col-10">
+                    <div class="input-group-prepend w-35">
+                        <span class="input-group-text"><div class="align-self-start">Топология 2</div></span>
+                    </div>
+
+                    <select class="custom-select" data-bind="options: topologies,
+                                                            optionsText: 'topology_name',
+                                                            optionsValue: 'topology_file',
+                                                            value: selected_topology2,
+                                                            optionsCaption: 'Выберите топологию...'">
+                    </select>
+
+                </div>
+            </div>
+
+            <div class="form-group row justify-content-center">
+                <div class="input-group col-10 justify-content-center">
+                    <button data-bind="click: compareTopology" type="button" class="btn btn-outline-primary btn-sm"><i class="fas fa-greater-than-equal"></i>&nbsp; Сравнить топологии</button>
+                </div>
+            </div>
+            <div class="form-group row justify-content-center">
+                <div class="input-group col-12">
+                    <textarea rows="10" class="form-control" id="message-text" data-bind="value: diff_string"></textarea>
+                </div>
+            </div>
+
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-lg" data-dismiss="modal"><i class="fas fa-times"></i>&nbsp; Закрыть</button>
+    </div>
+    </div>
+</div>
+</div>
+
+<!-- КОНЕЦ Диалоговые окна -->	
+
+<footer class="footer mt-auto py-3 bg-dark">
+    <div class="container">
+        <span class="text-muted">Топология сети по данным LLDP. Cisco DevNet Марафон Финальное задание. Май 2020.</span>
+    </div>
+</footer>
+
+<script type="text/javascript">
+    function TopologyViewModel() {
+        var self = this;
+
+        self.topology_name = ko.observable();
+        self.topology_file = ko.observable();
+
+        self.setTopology = function(topology) {
+            self.topology_name(topology.topology_name());
+            self.topology_file(topology.topology_file());
+        }
+    }
+
+    function TopologiesViewModel() {
+        var self = this;
+
+        self.table = null;
+        self.tableName = '#table_topologies';
+
+        self.network = null;
+
+        self.topologies = ko.observableArray();
+        self.selected_topology_name = ko.observable();
+        self.selected_topology_file = ko.observable();
+
+        self.BaseURI = 'http://127.0.0.1:5000/api/v1.0/topology/';
+		
+        self.ajax = function(uri, method, data) {
+            var request = {
+                url: uri,
+                type: method,
+                contentType: "application/json",
+                accepts: "application/json",
+                cache: false,
+                dataType: 'json',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Accept", "application/json");
+                    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    // Show image container
+                    $("#myloader").modal('show');
+                },
+                error: function(jqXHR) {
+                    console.log("ajax error " + jqXHR.status);
+                    self.getAlertHTML('warning','<i class="fas fa-exclamation-triangle"></i>','Невозможно установить соединение. Код ошибки [ '+jqXHR.status+', '+jqXHR.statusText+' ].').appendTo( '#alerts-space' );
+                },
+                complete: function(data){
+                    // Hide image container
+                    $("#myloader").modal('hide');
+                }
+            };
+            return $.ajax(request);
+        }
+        self.getAlertHTML = function ( type, text1, text2) {
+            var html = `
+<div class="alert alert-`+type+` alert-dismissible fade show d-print-none" role="alert">
+  <strong>`+text1+`</strong> `+text2+`
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>`
+            return $(html);
+        }
+
+        self.ajax(self.BaseURI+'list', 'GET').then(function(data) {
+            console.log(data);
+            for (var i = 0; i < data.data.length; i++) {
+                self.topologies.push( {
+                    topology_name: ko.observable(data.data[i].topology_name),
+                    topology_file: ko.observable(data.data[i].topology_file)
+                });
+            }
+            self.showTopology('last');
+        }, function(data) {
+            console.log("error: " + JSON.stringify(data));
+            self.getAlertHTML('warning','<i class="fas fa-exclamation-triangle"></i>','Обновите страницу. <a href="#" class="alert-link" onClick="window.location.reload(true);"><i class="fas fa-sync-alt"></i> Обновить</a>').appendTo( '#alerts-space' );
+            } );
+
+        self.showTopology = function(name) {
+
+            self.ajax(self.BaseURI+name, 'GET').then(function(data) {
+                data.nodes = data.nodes.map(function(e) {
+                    return {
+                        id: e.host, label: e.host, image: "/static/img/" + e.dev_type + ".png", title: e.host
+                }})
+                data.edges = data.edges.map(function(e) {
+                    return {
+                        from: e.from, to: e.to, labelFrom: e.from_interface, labelTo: e.to_interface, title: "<strong>"+e.from+"</strong> from: "+e.from_interface+"<br><strong>"+e.to+"</strong> to: "+e.to_interface
+                }})
+                // provide the network nodes and edges in the format that is required for vis.js
+                var topology_data = {
+                    nodes: data.nodes,
+                    edges: data.edges
+                };
+                // set vis.js options
+                var options = {
+                                nodes: {
+                                    shape: 'image',
+                                    font: { align: 'center' }
+                                },
+                                edges: {
+                                    font: { size: 10, color: 'black' },
+                                    //chosen: false,
+                                    smooth: { forceDirection: "none" }
+                                },
+                                physics: {
+                                    barnesHut: { gravitationalConstant: -30000 },
+                                    minVelocity: 0.75,
+                                    timestep: 0.5
+                                }
+                }
+
+                // create a network
+                var container = document.getElementById('mynetwork');
+                // create the network object
+                if (self.network) {
+                    self.network.destroy();
+                }
+                self.network = new vis.Network(container, topology_data, options);
+
+            }, function(data) {
+                console.log("error: " + JSON.stringify(data));
+                self.getAlertHTML('warning','<i class="fas fa-exclamation-triangle"></i>','Обновите страницу. <a href="#" class="alert-link" onClick="window.location.reload(true);"><i class="fas fa-sync-alt"></i> Обновить</a>').appendTo( '#alerts-space' );
+                } );
+        }
+
+        self.selectTopology = function(topology, event) {
+            var elem = $(event.target);
+            if ( $(elem).parent().hasClass('selected') ) {
+                //$(elem).parent().removeClass('selected');
+            } else {
+                $(self.tableName+' tr.selected').removeClass('selected');
+                $(elem).parent().addClass('selected');
+            }
+            self.selected_topology_name(topology.topology_name());
+            self.selected_topology_file(topology.topology_file());
+            console.log(self.selected_topology_name());
+            self.showTopology(self.selected_topology_file());
+            MyTopologyViewModel.setTopology(topology);
+        }
+
+        self.createTopology = function() {
+            console.log('Создать топологию');
+            self.ajax(self.BaseURI+'create', 'GET').then(function(data) {
+                console.log(data);
+                self.topologies.push( {
+                        topology_name: ko.observable(data.data.topology_name),
+                        topology_file: ko.observable(data.data.topology_file)
+                    });
+                //self.showTopology('last');
+            }, function(data) {
+                console.log("error: " + JSON.stringify(data));
+                self.getAlertHTML('warning','<i class="fas fa-exclamation-triangle"></i>','Обновите страницу. <a href="#" class="alert-link" onClick="window.location.reload(true);"><i class="fas fa-sync-alt"></i> Обновить</a>').appendTo( '#alerts-space' );
+                } );
+        }
+
+        self.compareTopology = function() {
+            console.log('Сравнить топологии');
+            $('#compareTopology').modal('show');
+        }
+
+    }
+
+    function CompareViewModel() {
+        var self = this;
+
+        self.topologies = ko.pureComputed(function () {
+            return MyTopologiesViewModel.topologies.sorted(function (a, b) {
+                var a1 = a.topology_name().toLowerCase();
+                var b1 = b.topology_name().toLowerCase();
+                return a1.toString().localeCompare(b1.toString());
+            });
+        });
+        self.selected_topology1 = ko.observable();
+        self.selected_topology2 = ko.observable();
+
+        self.diff_string = ko.observable();
+
+        self.BaseURI = 'http://127.0.0.1:5000/api/v1.0/topology/';
+
+        self.ajax = function(uri, method, data) {
+            var request = {
+                url: uri,
+                type: method,
+                contentType: "application/json",
+                accepts: "application/json",
+                cache: false,
+                dataType: 'json',
+                data: data,
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Accept", "application/json");
+                    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                    // Show image container
+                    $("#loader").modal('show');
+                },
+                error: function(jqXHR) {
+                    console.log("ajax error " + jqXHR.status);
+                    self.getAlertHTML('warning','<i class="fas fa-exclamation-triangle"></i>','Невозможно установить соединение. Код ошибки [ '+jqXHR.status+', '+jqXHR.statusText+' ].').appendTo( '#alerts-space' );
+                },
+                complete: function(data){
+                    // Hide image container
+                    $("#loader").modal('hide');
+                }
+            };
+            return $.ajax(request);
+        }
+        self.getAlertHTML = function ( type, text1, text2) {
+            var html = `
+<div class="alert alert-`+type+` alert-dismissible fade show d-print-none" role="alert">
+  <strong>`+text1+`</strong> `+text2+`
+  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>`
+            return $(html);
+        }
+
+        self.compareTopology = function() {
+            if (typeof self.selected_topology1() == 'undefined') {
+                self.diff_string("Выберете Топологию 1 для сравнения");
+                return
+            } else if (typeof self.selected_topology2() == 'undefined') {
+                self.diff_string("Выберете Топологию 2 для сравнения");
+                return
+            } else {
+                //self.diff_string(self.selected_topology1()+'<br>'+self.selected_topology2());
+                var data = { file1: self.selected_topology1(), file2: self.selected_topology2() };
+                self.ajax(self.BaseURI + 'compare', 'GET', data).then(function(data) {
+                    console.log(JSON.stringify(data.data.compare));
+                    self.diff_string(JSON.stringify(data.data.compare, undefined, 4));
+                }, function(data) {
+                    console.log("error: " + JSON.stringify(data));
+                    self.getAlertHTML('warning','<i class="fas fa-exclamation-triangle"></i>','Обновите страницу. <a href="#" class="alert-link" onClick="window.location.reload(true);"><i class="fas fa-sync-alt"></i> Обновить</a>').appendTo( '#alerts-space' );
+                    } );
+            }
+        }
+
+    }
+
+    var MyTopologyViewModel = new TopologyViewModel();
+    var MyTopologiesViewModel = new TopologiesViewModel();
+    var MyCompareViewModel = new CompareViewModel();
+
+    ko.applyBindings(MyTopologyViewModel, $('#topology')[0]);
+    ko.applyBindings(MyTopologiesViewModel, $('#topologies')[0]);
+    ko.applyBindings(MyCompareViewModel, $('#compareTopology')[0]);
+
+</script>
+
+</body>
+</html>

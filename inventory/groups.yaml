@@ -1,0 +1,4 @@
+catalyst:
+  platform: 'cisco_ios_ssh'
+  username: 'cisco'
+  password: 'cisco'

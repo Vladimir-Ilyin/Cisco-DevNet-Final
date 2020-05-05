@@ -1,0 +1,73 @@
+{
+    "nodes": [
+        {
+            "host": "SW-SEG-LAB-CORE",
+            "group": "core_device",
+            "dev_type": "l3switch"
+        },
+        {
+            "host": "LAB-B",
+            "group": "edge_device",
+            "dev_type": "l2switch"
+        },
+        {
+            "host": "N5K-C5548UP-FA",
+            "group": "edge_device",
+            "dev_type": "l2switch"
+        },
+        {
+            "host": "vx9000-9F8302",
+            "group": "edge_device",
+            "dev_type": "l3switch"
+        },
+        {
+            "host": "LAB-A",
+            "group": "edge_device",
+            "dev_type": "l2switch"
+        }
+    ],
+    "edges": [
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/43",
+            "to": "LAB-B",
+            "to_interface": "Eth1/19"
+        },
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/44",
+            "to": "LAB-B",
+            "to_interface": "Eth1/20"
+        },
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/5",
+            "to": "N5K-C5548UP-FA",
+            "to_interface": "mgmt0"
+        },
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/33",
+            "to": "vx9000-9F8302",
+            "to_interface": "ge1"
+        },
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/46",
+            "to": "LAB-A",
+            "to_interface": "Eth1/20"
+        },
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/45",
+            "to": "LAB-A",
+            "to_interface": "Eth1/19"
+        },
+        {
+            "from": "SW-SEG-LAB-CORE",
+            "from_interface": "Gi1/0/8",
+            "to": "N5K-C5548UP-FA",
+            "to_interface": "Eth1/2"
+        }
+    ]
+}

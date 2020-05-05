@@ -1,0 +1,22 @@
+# First line is the header fields for columns and is mandatory.
+# Regular expressions are supported in all fields except the first.
+# Last field supports variable length command completion.
+# abc[[xyz]] is expanded to abc(x(y(z)?)?)?, regexp inside [[]] is not supported
+#
+# Rules of Ordering:
+#  - OS in alphbetical order
+#  - Command in length other
+#  - When Length is the same, use alphabetical order
+#  - Keep space between OS's
+#
+Template, Hostname, Platform, Command
+
+cisco_ios_show_mac-address-table.textfsm, .*, cisco_ios, sh[[ow]] mac[[-address-table]]
+cisco_ios_show_interfaces_switchport.textfsm, .*, cisco_ios, sh[[ow]] int[[erfaces]] sw[[itchport]]
+cisco_ios_show_lldp_neighbors.textfsm, .*, cisco_ios, sh[[ow]] lld[[p]] neig[[hbors]]
+cisco_ios_show_lldp_neighbors_detail.textfsm, .*, cisco_ios, sh[[ow]] lld[[p]] neig[[hbors]] det[[ail]]
+
+cisco_nxos_show_mac_address-table.textfsm, .*, cisco_nxos, sh[[ow]] m[[ac]] addr[[ess-table]]
+cisco_nxos_show_interfaces_switchport.textfsm, .*, cisco_nxos, sh[[ow]] int[[erfaces]] sw[[itchport]]
+cisco_nxos_show_lldp_neighbors.textfsm, .*, cisco_nxos, sh[[ow]] ll[[dp]] nei[[ghbors]]
+cisco_nxos_show_lldp_neighbors_detail.textfsm, .*, cisco_nxos, sh[[ow]] ll[[dp]] nei[[ghbors]] d[[etail]]

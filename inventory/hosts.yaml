@@ -1,0 +1,7 @@
+SW-SEG-LAB-CORE:
+  hostname: 10.200.128.1
+  groups:
+    - catalyst
+  data:
+    tags:
+      - ios
